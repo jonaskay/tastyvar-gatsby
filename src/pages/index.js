@@ -13,7 +13,7 @@ const IndexPage = ({ data }) => {
       <SEO title="Home" />
       <main>
         <header className="bg-gray-900 text-white">
-          <div className="container mx-auto px-4 sm:px-8 lg:px-16 py-8">
+          <div className="container mx-auto px-6 sm:px-8 lg:px-16 py-8">
             <h1 className="mb-2 text-4xl sm:text-5xl font-bold">
               <Link to="/">{data.site.siteMetadata.title}</Link>
             </h1>
@@ -22,7 +22,7 @@ const IndexPage = ({ data }) => {
             </div>
           </div>
         </header>
-        <div className="container mx-auto px-4 sm:px-8 lg:px-16 py-8">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-16 py-8">
           <h2 className="mb-6 text-3xl font-bold">Guides</h2>
           <div className="sm:flex sm:-mx-2">
             {content.map(entry => {
