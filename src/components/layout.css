@@ -14,6 +14,28 @@ code {
 
 @import "tailwindcss/components";
 
+h2 > .anchor.before {
+  padding-right: 2px;
+  top: 6px;
+}
+
+h3 > .anchor.before {
+  padding-right: 2px;
+  top: 5px;
+}
+
+@screen sm {
+  h2 > .anchor.before {
+    padding-right: 3px;
+    top: 8px;
+  }
+
+  h3 > .anchor.before {
+    padding-right: 3px;
+    top: 7px;
+  }
+}
+
 .brand:hover > span::before {
   animation: typing 0.2s linear;
   content: " = 🌮"
@@ -93,7 +115,7 @@ code {
 }
 
 .markdown h2 {
-  @apply .mt-10 .mb-2 .text-xl;
+  @apply .relative .mt-10 .mb-2 .text-xl;
 }
 
 .markdown h3 {
@@ -104,6 +126,20 @@ code {
 
 .markdown > p:first-child {
   @apply .mt-0;
+}
+
+@screen sm {
+  .markdown > p:first-child {
+    @apply .text-xl;
+  }
+
+  .markdown h2 {
+    @apply .text-3xl;
+  }
+
+  .markdown h3 {
+    @apply .text-2xl;
+  }
 }
 
 .markdown a {
@@ -133,20 +169,6 @@ code {
   @apply .p-4;
 
   display: block;
-}
-
-@screen sm {
-  .markdown > p:first-child {
-    @apply .text-xl;
-  }
-
-  .markdown h2 {
-    @apply .text-3xl;
-  }
-
-  .markdown h3 {
-    @apply .text-2xl;
-  }
 }
 
 @import "tailwindcss/utilities";
