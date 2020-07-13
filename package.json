@@ -1,9 +1,9 @@
 {
-  "name": "gatsby-starter-default",
+  "name": "tastyvar-blog",
   "private": true,
-  "description": "A simple starter to get up and developing quickly with Gatsby",
+  "description": "Developer blog built with Gatsby",
   "version": "0.1.0",
-  "author": "Kyle Mathews <mathews.kyle@gmail.com>",
+  "author": "Joonas Kykkänen <jonaskay@iki.fi>",
   "dependencies": {
     "autoprefixer": "^9.8.4",
     "gatsby": "^2.23.12",
@@ -14,6 +14,7 @@
     "gatsby-plugin-react-helmet": "^3.3.6",
     "gatsby-plugin-sharp": "^2.6.14",
     "gatsby-source-filesystem": "^2.3.14",
+    "gatsby-transformer-remark": "^2.8.25",
     "gatsby-transformer-sharp": "^2.5.7",
     "prop-types": "^15.7.2",
     "react": "^16.12.0",
