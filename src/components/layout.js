@@ -4,7 +4,7 @@ import PropTypes from "prop-types"
 import "./layout.css"
 
 const Layout = ({ children }) => (
-  <div className="flex flex-col justify-between min-h-screen sm:text-lg">
+  <div className="flex flex-col justify-between min-h-screen sm:text-lg break-words">
     <div>{children}</div>
     <footer className="p-8 text-center text-base">
       © {new Date().getFullYear()}
