@@ -457,7 +457,7 @@ deploy:
 
 ### First deployment
 
-Commit your changes and push them to GitHub. If you go see your build at [https://travis-ci.com/](https://travis-ci.com/) you should see it running successfully. See the log from gcloud's deploy command to see where you can preview your app (the URL will have the format of YOUR\_PROJECT\_ID.YOUR\_REGION\_ID.r.appspot.com).
+Commit your changes and push them to GitHub. If you go see your build at [https://travis-ci.com/](https://travis-ci.com/) you should see it running successfully. See the log from gcloud's deploy command to see where you can preview your app (the URL will have the format of `YOUR_PROJECT_ID.YOUR_REGION_ID.r.appspot.com`).
 
 If you go preview your app right now, you will probably encounter an error page. This is because your app is still missing a database. Let's set up one in the next chapter.
 
