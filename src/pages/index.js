@@ -36,23 +36,6 @@ const IndexPage = ({ data }) => {
                 />
               )
             })}
-            <div className="card sm:flex sm:flex-col sm:justify-center p-4">
-              <h4 className="mb-4 text-center text-lg">
-                Subscribe for more guides
-              </h4>
-              <div className="border border-indigo-300 rounded-sm sm:text-base text-sm">
-                <input
-                  type="email"
-                  className="w-3/4 p-2"
-                  placeholder="Your email address"
-                />
-                <input
-                  type="submit"
-                  value="Join"
-                  className="w-1/4 p-2 bg-indigo-300 cursor-pointer"
-                />
-              </div>
-            </div>
           </div>
         </div>
       </main>
