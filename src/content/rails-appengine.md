@@ -1,0 +1,628 @@
+---
+title: "Deploying a Ruby on Rails 6 application on Google App Engine Standard with Travis CI"
+description: "Step-by-step guide for deploying a Ruby on Rails 6 application with a PostgreSQL database on Google App Engine standard environment using Travis CI"
+date: 2020-09-27
+---
+
+This guide will walk you through how to deploy a Ruby on Rails 6 application with a PostgreSQL database on Google App Engine standard environment using a Travis CI pipeline.
+
+- [App Engine standard vs. flexible environment](#app-engine-standard-vs-flexible-environment)
+- [Prerequisites](#prerequisites)
+- [Setting up Travis CI](#setting-up-travis-ci)
+	- [Configuring Travis CI](#configuring-travis-ci)
+	- [Specifying Ruby and Node.js versions](#specifying-ruby-and-nodejs-versions)
+	- [First Travis CI build](#first-travis-ci-build)
+- [Setting up App Engine](#setting-up-app-engine)
+	- [Creating a new App Engine application](#creating-a-new-app-engine-application)
+	- [Configuring the App Engine application](#configuring-the-app-engine-application)
+	- [Choosing which files to deploy to App Engine](#choosing-which-files-to-deploy-to-app-engine)
+- [Adding gcloud to Travis CI](#adding-gcloud-to-travis-ci)
+	- [Installing Google Cloud SDK](#installing-google-cloud-sdk)
+	- [Authorizing gcloud to access Google Cloud Platform](#authorizing-gcloud-to-access-google-cloud-platform)
+	- [Enabling App Engine APIs](#enabling-app-engine-apis)
+	- [Connecting Cloud SDK to the Cloud project](#connecting-cloud-sdk-to-the-cloud-project)
+- [Deploying the app to App Engine](#deploying-the-app-to-app-engine)
+	- [Managing secrets](#managing-secrets)
+	- [Preparing assets](#preparing-assets)
+	- [Writing the deploy script](#writing-the-deploy-script)
+	- [First deployment](#first-deployment)
+- [Setting up PostgreSQL with Cloud SQL](#setting-up-postgresql-with-cloud-sql)
+	- [Creating a database](#creating-a-database)
+	- [Configuring database connections](#configuring-database-connections)
+	- [Running migrations](#running-migrations)
+- [Finishing up](#finishing-up)
+	- [Clean-up](#clean-up)
+	- [Full .travis.yml file](#full-travisyml-file)
+- [Useful links](#useful-links)
+
+## App Engine standard vs. flexible environment
+
+Google added Ruby support for App Engine standard environment in August 2019. Before this, Rails developers could only deploy their apps on App Engine flexible environment.
+
+If you are currently running a Rails application using the flexible environment, you might want to consider switching to the standard environment if you want to **bring down your deployment times** (deployment times are around 4-7 minutes on the flexible environment and 1-3 minutes on the standard environment) or use **scale-to-zero** (instances can be scaled down when no one is using them).
+
+As of September 2020, App Engine standard environment supports only Ruby 2.5. If downgrading or upgrading to 2.5 is not possible for you, you are not able to deploy your app on App Engine standard environment.
+
+If you are starting a new Rails application or moving your application for example from Heroku to App Engine, it's likely that the standard environment will be your pick. However, there are lots of other technical differences between the two environments that you might need to take into consideration in the context of your project. For a more in-depth comparison of App Engine standard vs. flexible environment, see GCP's article [Choosing an App Engine environment](https://cloud.google.com/appengine/docs/the-appengine-environments).
+
+## Prerequisites
+
+This guide assumes that you have a working Rails project installed on your computer and that you have a user account in the following services:
+
+- [Google Cloud Platform](https://cloud.google.com/gcp/)
+- [Travis CI](https://travis-ci.com/)
+- [GitHub](https://github.com/)
+
+Signing up for all of these services is free. However, as of September 2020 GCP will charge you for your PostgreSQL instance. **It's important to clean up your GCP resources after finishing this guide if you don't want these costs to continue running.** This guide has separate instructions on how to do this and you can find them in chapter [Clean-up](#clean-up).
+
+If you don't have Rails installed or a working Rails application on your computer, GoRails has excellent guides on how to install and start a new Rails application on Ubuntu, macOS, or Windows. You can find them [here](https://gorails.com/setup/).
+
+## Setting up Travis CI
+
+Before setting up a new App Engine application, we will initialize our Travis CI pipeline.
+
+If you have signed in to Travis CI using your GitHub account, all you need to do to start your Travis CI builds is to add the `.travis.yml` file to your project root and push the changes to your GitHub repository. Travis CI will start a new build automatically on each push.
+
+### Configuring Travis CI
+
+Travis CI pipelines are configured using a YAML file that lives inside your project root directory.
+
+Create a new file called `.travis.yml` inside your project's root directory and add the following content to it (make sure to call your file `.travis.yml` and not `.travis.yaml`):
+
+```
+dist: xenial
+language: ruby
+cache:
+  bundler: true
+  yarn: true
+  directories:
+    - "node_modules"
+services:
+  - postgresql
+install:
+  - bundle install --jobs=3 --retry=3 --deployment
+  - nvm install
+  - bin/yarn
+before_script:
+  - bin/rails db:prepare
+script:
+  - bin/rails test
+```
+
+Let's briefly go through these different lines.
+
+`dist: xenial` and `language: ruby` tells Travis CI to use the Ubuntu Xenial and Ruby build environments.
+
+`cache` tells Travis CI to cache our dependencies for Bundler (`bundler: true`) and Node.js (`yarn: true` and `"node_modules"` under `directories`).
+
+Under `services` we add `postgresql` to run a PostgreSQL instance during our build. We need this database instance to run tests (and later on in the guide to precompile assets). This database instance is not our production database. It's just a temporary instance that gets thrashed every time our Travis CI build finishes.
+
+During the `install` phase we install all our dependencies: First, we install our Bundler dependencies with Travis CI's default bundler command `bundle install --jobs=3 --retry=3 --deployment`. After that, we instruct Node Version Manager to install the correct Node.js version with `nvm install`. Finally, we run the command `bin/yarn` to install Node.js dependencies.
+
+In our `before_script` step we prepare our database for the tests. The command `bin/rails db:prepare` was introduced in Rails 6 and it either runs migrations or creates the database, loads the schema, and seeds the database if no database exists.
+
+*Sidenote:* Travis CI doesn't store our database between builds and therefore `bin/rails db:prepare` will always create a new database and seed it. This means that we could easily replace `bin/rails db:prepare` with `bin/rails db:setup`. But I thought that this is a great opportunity to get more familiar with this new Rails 6 database task.
+
+Finally, we run our tests to make sure everything is working during the `script` phase with the command `bin/rails test`.
+
+### Specifying Ruby and Node.js versions
+
+We could specify the required Ruby and Node.js versions inside `.travis.yml` (see [Specifying Ruby versions](https://docs.travis-ci.com/user/languages/ruby/#specifying-ruby-versions-and-implementations) and [Specifying Node.js versions](https://docs.travis-ci.com/user/languages/ruby/#specifying-ruby-versions-and-implementations)) but we will instead specify the required versions by adding `.ruby-version` and `.nvmrc` files inside our project root. Travis CI is able to pick up the correct Ruby and Node.js versions from these files.
+
+Why add these config files? It's likely that other developers working on the project are using [Ruby Version Manager (RVM)](https://rvm.io/) (or [rbenv](https://github.com/rbenv/rbenv)) and [Node Version Manager (nvm)](https://github.com/nvm-sh/nvm) to manage their Ruby and Node.js versions. Just like Travis CI, these version managers are able to read the version files automatically and instruct your fellow developers to install and use the correct language versions while working on the project.
+
+To add the `.ruby-version` file, run
+
+```
+$ echo "ruby-2.5.8" > .ruby-version
+```
+
+*Sidenote:* Remember that as of September 2020 App Engine standard environment supports only Ruby 2.5.
+
+In addition to specifying a Ruby version with a `.ruby-version` file, we need to make sure our `Gemfile` doesn't restrict the Ruby version to a specific version. This is because App Engine might update the patch version.
+
+Inside your `Gemfile`, define the required Ruby version as:
+
+```
+ruby '~> 2.5.0'
+```
+
+Finally, let's define our Node.js version. To add the `.nvmrc` file with the latest LTS version (as of September 2020), run
+
+```
+$ echo "12.18.4" > .nvmrc
+```
+
+### First Travis CI build
+
+Save the `.travis.yml` file and commit your changes by running
+
+```
+$ git add .travis.yml
+$ git commit -m "Add .travis.yml"
+```
+
+After the commit, push your changes to GitHub by running
+
+```
+$ git push origin master
+```
+
+If you go to [https://travis-ci.com/](https://travis-ci.com/), you should see your new build appear. If your build errors, double check your typing and look for clues inside the build logs to figure out what's causing the build to error. If your build doesn't appear on Travis CI even after waiting for couple of minutes, make sure you have correctly named the config file `.travis.yml`: the filename begins with a dot and its extension is `.yml`  – not `.yaml`.
+
+## Setting up App Engine
+
+### Creating a new App Engine application
+
+Before we can add a deploy step to our CI/CD pipeline, we need to initialize our application on App Engine.
+
+First, log in to the Google Cloud console at [https://console.cloud.google.com/](https://console.cloud.google.com/). Select or create a new project in the Cloud console. Make sure that billing is enabled for your project.
+
+After that, go to `App Engine`. Create a new application in a region that suits your needs. After selecting the region, you can optionally select the language and environment for your application. Our application's language will be `Ruby` and environment `Standard`.
+
+Instead of using the Cloud console, you can also create the App Engine application using the Google Cloud SDK by running
+
+```
+$ gcloud app create
+```
+
+For more information on how to install the Cloud SDK on your computer, see [https://cloud.google.com/sdk/docs/quickstarts](https://cloud.google.com/sdk/docs/quickstarts).
+
+### Configuring the App Engine application
+
+App Engine applications are configured using an `app.yaml` file which is located inside the root directory of your project.
+
+Create the `app.yaml` file and add the following to it:
+
+```yaml
+runtime: ruby25
+entrypoint: bundle exec rails server -p $PORT
+env_variables:
+  RAILS_ENV: production
+```
+
+Let's go through these lines.
+
+`runtime` defines the runtime environment for your App Engine application. As of September 2020, the only available standard environment Ruby runtime is `ruby25` (Ruby 2.5).
+
+`entrypoint` is the command that starts your application. The value for the environment variable `PORT` is set up by App Engine on our behalf.
+
+Finally, `env_variables` allows us to define custom environment variables for our instance.
+
+**Important:** don't add any sensitive information (such as passwords or API keys) inside your `app.yaml` file.
+
+In this guide we will commit `app.yaml` to our git history and push it to GitHub. If your GitHub repository is public, your unencrypted passwords and API keys specified inside `app.yaml` are available to everyone who stumbles across your repository. Even if your GitHub repository is private, committing sensitive information in your git history without any kind of encryption is not a good practice.
+
+We will discuss more about managing sensitive information in chapter [Configuring database connections](#configuring-database-connections).
+
+### Choosing which files to deploy to App Engine
+
+When you deploy a new version of your application to App Engine, the gcloud command-line tool (part of the Google Cloud SDK) uploads your current project files to App Engine where a new version of your application gets installed. You can't deploy a new version directly from GitHub. Instead, you need to do your deployment from an environment that has Google Cloud SDK installed. This environment can be your computer or a virtual machine such as Travis CI.
+
+If we don't upload our files directly from git history but instead from our current project directory, we will upload lots of extra files that App Engine doesn't really need. These extra files include for example our `node_modules` and `tmp` folders.
+
+gcloud does ignore some files during App Engine deployments by default. However, this default ignore list will actually contain files that we do want to upload to App Engine. These "ignored but needed" files are our precompiled assets which we will get to in chapter [Preparing assets](#preparing-assets).
+
+Luckily, we can add a `.gcloudignore` file inside the root directory of our project. This file will tell gcloud what files to skip when uploading project files to App Engine. `.gcloudignore` will also override gcloud's default ignore list.
+
+If you are familiar with the syntax of `.gitignore`, you should have no problem adding new rules to `.gcloudignore`: the `.gcloudignore` syntax is heavily inspired by `.gitignore`. To read more about `.gcloudignore`, see [https://cloud.google.com/sdk/gcloud/reference/topic/gcloudignore](https://cloud.google.com/sdk/gcloud/reference/topic/gcloudignore).
+
+Here is an example `.gloudignore` file for a new Rails 6 project:
+
+```
+# Ignore itself
+.gcloudignore
+
+# Ignore git files
+.git
+.gitignore
+
+# Ignore gems installed by Travis CI
+/vendor/bundle
+
+# Ignore other local Rails files
+/.bundle
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+/tmp/pids/*
+!/tmp/pids/
+!/tmp/pids/.keep
+/storage/*
+!/storage/.keep
+.byebug_history
+/public/packs-test
+/node_modules
+/yarn-error.log
+yarn-debug.log*
+.yarn-integrity
+```
+
+If you have added new rules to your `.gitignore` file, you should add them also to `.gcloudignore`.
+
+Our `.gitignore` and `.gcloudignore` are not one-to-one in terms of ignore rules:
+
+- `.gcloudignore` ignores itself (`.gitignore`) and git history (`.git` and `.gitignore`).
+- `.gcloudignore` doesn't ignore `/public/assets` and `/public/packs`. These directories contain our precompiled assets that we need to upload to App Engine.
+- `.gcloudignore` doesn't ignore `/config/master.key`. This is the key that allows us to access different application credentials on App Engine. **Important:** never commit this file to your git history (keep it in `.gitignore`)!
+- Travis CI will install gems in `/vendor/bundle` inside our project. If we don't ignore this directory, we will end up uploading extra copies of our gems to App Engine.
+
+If at any point gcloud errors because your deployment has too many files, you should double check your `.gcloudignore` file. When debugging this error, you might find it also helpful to view the current deployed source code by navigating to `App Engine > Dashboard > Debug` in Cloud console and seeing if your source contains any files that shouldn't be there.
+
+## Adding gcloud to Travis CI
+
+### Installing Google Cloud SDK
+
+As mentioned before, we need the gcloud command-line tool to deploy our application to App Engine. The gcloud command-line tool is part of the Google Cloud SDK.
+
+Since we want to deploy the application using our CI/CD pipeline, we need to install the Google Cloud SDK for our Travis CI virtual machine. We will also cache this install to make our builds faster.
+
+ First, add a new cached directory for Google Cloud SDK inside `.travis.yml`:
+
+```
+cache:
+	bundler: true
+	yarn: true
+	directories:
+		- "node_modules"
+		- "$HOME/google-cloud-sdk/"
+```
+
+After that, add a new `before_install` step before the `install` step inside `.travis.yml`:
+
+```
+before_install:
+	- if [ ! -d ${HOME}/google-cloud-sdk ]; then
+			curl https://sdk.cloud.google.com | bash;
+		fi
+```
+
+This command checks if an existing Google Cloud SDK installation exists in our virtual machine and installs it if needed.
+
+### Authorizing gcloud to access Google Cloud Platform
+
+Our Travis CI pipeline now has gcloud installed but it's not authorized to access our Google Cloud project. In order to authorize Travis CI to run our App Engine deployments, we need to add a service account for it.
+
+Inside Cloud console, go to `IAM & Admin > Service Accounts` and select `Create service account`. You can give whatever name and ID you want for the service account (e.g. I have named my service account "Travis CI" and given it the ID "travis-ci"). After that, add the roles `App Engine Admin`, `Cloud Build Service Account`, and `Storage Admin` to the service account.
+
+Create new credentials for the service account by selecting the account from the list of service accounts and then selecting `Add key > Create new key` under the Keys section. When asked for the key type, choose JSON.
+
+The credentials are automatically downloaded on your computer. Rename the downloaded file as `service-account.json` and move it to your project directory.
+
+**Important:** Do not commit this file to your git history. To be extra sure you won't accidentally do this now or in the future, add the following line to your `.gitignore`:
+
+```
+service-account.json
+```
+
+Feel free to also delete `service-account.json` from your computer after we have finished encrypting it (don't delete it yet).
+
+In order to safely upload these credentials to GitHub and Travis CI, we need to encrypt them using the Travis CI Command Line Client.
+
+You can install the client by running:
+
+```
+$ gem install travis
+```
+
+After installing the client, authorize it with Travis CI by running:
+
+```
+$ travis login --com
+```
+
+To read more about the Travis Client, see [https://github.com/travis-ci/travis.rb](https://github.com/travis-ci/travis.rb).
+
+Encrypt the credentials file by running:
+
+```
+$ travis encrypt-file service-account.json --com
+```
+
+*Sidenote:* the `--com` option tells the client to use travis-ci.com and not travis-ci.org. All new users and projects should only use travis-ci.com.
+
+The output of the `encrypt-file` command will contain instructions on how to also decrypt `service-account.json`. Copy the decrypt command from the instructions and add it as the first command in the `before_install` step inside `.travis.yml`:
+
+```
+openssl aes-256-cbc -K $encrypted_ENCRYPTION_ID_key -iv $encrypted_ENCRYPTION_ID_iv -in service-account.json.enc -out service-account.json -d
+```
+
+Finally, we can authorize gcloud by adding the following line as the last `before_install` step command:
+
+```
+gcloud auth activate-service-account --key-file service-account.json
+```
+
+Here is what our final `before_install` step should look like:
+
+```
+before_install:
+	- openssl aes-256-cbc -K $encrypted_9f3b5599b056_key -iv $encrypted_9f3b5599b056_iv -in service-account.json.enc -out service-account.json -d
+	- if [ ! -d ${HOME}/google-cloud-sdk ]; then
+			curl https://sdk.cloud.google.com | bash;
+		fi
+	- gcloud auth activate-service-account --key-file service-account.json
+```
+
+### Enabling App Engine APIs
+
+In addition to creating and authorizing a service account to deploy our App Engine application, we need to enable few APIs using the Cloud console.
+
+Start by navigating to `APIs & Services > Library` in the cloud console.
+
+The APIs that we need to enable are:
+
+* App Engine Admin API
+* Cloud Build API
+
+Search for each of these APIs on the library page and enable them for your project.
+
+### Connecting Cloud SDK to the Cloud project
+
+Each App Engine application lives inside a Cloud project. We need to tell gcloud which Cloud project we are using to run our application in.
+
+Add the following command to the `install` step in `.travis.yml` (replace `MY_PROJECT` with your project ID):
+
+```
+gcloud config set project MY_PROJECT
+```
+
+Here is what our final `install` step should look like:
+
+```
+install:
+	- gcloud config set project MY_PROJECT
+	- bundle install --jobs=3 --retry=3 --deployment
+	- nvm install
+	- bin/yarn
+```
+
+## Deploying the app to App Engine
+
+Before we can deploy the first version of our app to App Engine, we need to share our `master.key` securely with App Engine and precompile our assets. After that, we are ready to deploy our app.
+
+### Managing secrets
+
+If you have previously used services like Heroku to deploy your Rails applications, you have probably managed sensitive information such as passwords and API keys using environment variables and setting them using an admin panel.
+
+App Engine doesn't provide us with such a GUI for setting environment variables. Instead, you define all your environment variables inside `app.yaml` which in our case gets committed to our git history and shared to GitHub (possibly for the whole world to see if our repo is public).
+
+Fortunately, Rails comes with the credentials feature that allows us to encrypt our secrets for safe sharing. Secrets are stored inside `config/credentials.yml.enc` and encrypted/decrypted using `config/master.key` (which is ignored by git by default). To read more about credentials, see [the official documentation](https://edgeguides.rubyonrails.org/security.html#custom-credentials).
+
+`config/master.key` is a highly sensitive file. Anyone who has access to your master key, will have access to your encrypted credentials. In order to safely upload the `config/master.key` file to App Engine, we are going to encrypt it the same way we encrypted the `service-account.json` file earlier:
+
+```
+$ travis encrypt-file config/master.key config/master.key.enc --com
+```
+
+Again, the terminal output will contain the command we need to run to decrypt `config/master.key`. Copy the command and add it as the first command to a new step called `before_deploy` in `.travis.yml`:
+
+```
+before_deploy:
+	- openssl aes-256-cbc -K $encrypted_ENCRYPTION_ID_key -iv $encrypted_ENCRYPTION_ID_iv -in config/master.key.enc -out config/master.key -d
+```
+
+### Preparing assets
+
+In order to precompile production assets, add the following command to `before_deploy` in `.travis.yml`:
+
+```
+RAILS_ENV=production bin/rails assets:precompile
+```
+
+To learn more about how prepare your asset pipeline for production, see [the official asset pipeline documentation](https://guides.rubyonrails.org/asset_pipeline.html#in-production).
+
+Here is what our final `before_deploy` step should look like:
+
+```
+before_deploy:
+	- openssl aes-256-cbc -K $encrypted_8ad82cc635a3_key -iv $encrypted_8ad82cc635a3_iv -in config/master.key.enc -out config/master.key -d
+	- RAILS_ENV=production bin/rails assets:precompile
+```
+
+### Writing the deploy script
+
+Travis CI has a ready-made App Engine integration that we could use to deploy our Rails app (read more about it [here](https://docs.travis-ci.com/user/deployment/google-app-engine/)). However, this integration will install a second version of Google Cloud SDK instead of using our existing, cached version. In order to keep our Travis CI builds fast, we will write our own deploy script and make use of our existing Google Cloud SDK installation instead.
+
+Why do we need our own Google Cloud SDK version? Later on in this guide we will start running migration tasks on App Engine using the `appengine` gem. This step requires our own gcloud installation.
+
+Add a new file `deploy` to the `bin` directory with the following content:
+
+```
+#!/bin/bash
+gcloud -q app deploy app.yaml
+```
+
+This gcloud command deploys a new version to App Engine using the `app.yaml` config file. The `-q` flag is there to disable user prompts.
+
+Make this file executable by running:
+
+```
+$ chmod +x ./bin/deploy
+```
+
+Add a new `deploy` step to `.travis.yml`:
+
+```
+deploy:
+  provider: script
+  script: ./bin/deploy
+  skip_cleanup: true
+  on:
+    branch: master
+```
+
+`provider: script` tells Travis CI to use a custom deploy script. `script: ./bin/deploy` tells Travis CI where to find this deploy script. `skip_cleanup: true` prevents Travis CI from removing the files generated during the previous steps (mainly `config/master.key` and precompiled assets). `branch: master` prevents this deploy step from being run on any other branch than our main branch.
+
+### First deployment
+
+Commit your changes and push them to GitHub. If you go see your build at [https://travis-ci.com/](https://travis-ci.com/) you should see it running successfully. See the log from gcloud's deploy command to see where you can preview your app (the URL will have the format of YOUR_PROJECT_ID.YOUR_REGION_ID.r.appspot.com).
+
+If you go preview your app right now, you will probably encounter an error page. This is because your app is still missing a database. Let's set up one in the next chapter.
+
+## Setting up PostgreSQL with Cloud SQL
+
+### Creating a database
+
+Cloud SQL is GCP's product name for its managed database instances. This guide assumes you are using PostgreSQL but it's also possible to use Cloud SQL with MySQL and SQL Server.
+
+In the Cloud console, navigate to `SQL` and click `Create instance`. Select PostgreSQL and continue to the creation form.
+
+Choose an ID for your database instance (this ID will be public) and a password for the default `postgres` user. Save the password somewhere safe for later use.
+
+Select a region that's closest to your App Engine region (according to Google Cloud's documentation, it's okay to leave the zone as `Any` in most cases).
+
+Finally, choose a PostgreSQL version you want to use and click `Create`.
+
+You can also configure things like your backup strategy and machine type using this form but this beyond the scope of this guide; the default configuration should work for you just fine especially if you are working with a demo app.
+
+If you are experiencing problems setting up Cloud SQL or if you want to create a PostgreSQL instance using gcloud, you can check out Google Cloud's documentation on creating PostgreSQL instances [here](https://cloud.google.com/sql/docs/postgres/create-instance).
+
+Wait for GCP to create your new database instance and after that, select it from the list of instances. Click `Databases` and `Create database`.
+
+Give the database a name such as `myapp_production` and click `Create`.
+
+### Configuring database connections
+
+We need to tell our Rails app how to connect to our new PostgreSQL instance. Part of this configuration contains sensitive information (the password for the `postgres` user) and we need to keep it private since we are uploading it to our possibly public GitHub repo.
+
+As mentioned in chapter [Managing secrets](#managing-secrets), we can store encrypted secrets inside `config/credentials.yml.enc` which we can then commit to our git history.
+
+To add new secrets, open the credentials file by first running:
+
+```
+$ bin/rails credentials:edit
+```
+
+Add the username and password of your PostgreSQL instance to the file and save it:
+
+```
+db:
+  username: postgres
+  password: <YOUR PASSWORD>
+```
+
+Rest of the configuration contains less sensitive information that we can include in `app.yaml` as is.
+
+Open `app.yaml` and add two new environment variables, `DATABASE_NAME` and `DATABASE_HOST`, to it:
+
+```yaml
+runtime: ruby25
+entrypoint: bundle exec rails server -p $PORT
+env_variables:
+  RAILS_ENV: production
+  DATABASE_NAME: YOUR_DATABASE_NAME
+  DATABASE_HOST: /cloudsql/YOUR_INSTANCE_CONNECTION_NAME
+```
+
+You can find the instance connection name of your PostgreSQL instance in Cloud console by navigating to `SQL` and finding the column `Instance connection name` from the instances list. The instance connection name should have the format of `PROJECT:REGION:INSTANCE_NAME`.
+
+Now that we have credentials and environment variables set up, we can finally add them to our database configuration.
+
+Open `config/database.yml` and add the following production configuration to it:
+
+```
+production:
+  <<: *default
+  database: <%= ENV["DATABASE_NAME"] %>
+  host: <%= ENV["DATABASE_HOST"] %>
+  username: <%= Rails.application.credentials.db.fetch(:username) %>
+  password: <%= Rails.application.credentials.db.fetch(:password) %>
+```
+
+At this point we need to also share our `config/master.key` with Travis CI so that it will be able to read our database credentials during database config initialization. Travis CI won't actually use the production config, but it will try to parse it nonetheless.
+
+Log in to [Travis CI](https://travis-ci.com/) and select your project. Navigate to the project settings and add a new environment variable `RAILS_MASTER_KEY` with the value of the contents of your `config/master.key` file.
+
+Commit your changes to `config/credentials.yml.enc`, `app.yaml` and `config/database.yml`, and push them to GitHub.
+
+### Running migrations
+
+In addition to creating a database in Cloud SQL and establishing a connection to it, we need to be able to run our migration files as we keep developing our Rails application.
+
+Using the [`appengine` gem](https://github.com/GoogleCloudPlatform/appengine-ruby), we can run migration tasks on Google Cloud instead of connecting your computer to the production database and running them from your local environment.
+
+First, add `appengine` to your `Gemfile`:
+
+```
+gem 'appengine'
+```
+
+Install the dependency by running
+
+```
+$ bundle
+```
+
+After that, add a migration script to our `before_deploy` step inside `.travis.yml`:
+
+```
+before_deploy:
+	- openssl aes-256-cbc -K $encrypted_8ad82cc635a3_key -iv $encrypted_8ad82cc635a3_iv -in config/master.key.enc -out config/master.key -d
+	- RAILS_ENV=production bin/rails assets:precompile
+	- bundle exec rake appengine:exec -- bin/rails db:migrate
+```
+
+You can now try to add a new migration file and deploy your application.
+
+*Sidenote:* At the time of writing, my migrations fail every now and then when I use this setup. However, whenever I restart a failed build on Travis, the migrations run successfully. I haven't unfortunately been able to figure out what's causing these occasional fails.
+
+## Finishing up
+
+We have now successfully deployed a Rails 6 application on Google App Engine Standard. Below you will find the full Travis CI file for reference. You can also find an example project running this setup at [https://github.com/jonaskay/rails-app-engine-standard](https://github.com/jonaskay/rails-app-engine-standard).
+
+But before we finish up, let's clean up our GCP resources so that we won't end up with surprise costs.
+
+### Clean-up
+
+The safest way to make sure that you have deleted all the billable resources is to delete your Cloud project.
+
+You can find the official documentation on how to do this [here](https://cloud.google.com/resource-manager/docs/creating-managing-projects#shutting_down_projects).
+
+### Full .travis.yml file
+
+```
+dist: xenial
+language: ruby
+cache:
+  bundler: true
+  yarn: true
+  directories:
+    - "node_modules"
+    - "$HOME/google-cloud-sdk/"
+services:
+  - postgresql
+before_install:
+  - openssl aes-256-cbc -K $encrypted_9f3b5599b056_key -iv $encrypted_9f3b5599b056_iv -in service-account.json.enc -out service-account.json -d
+  - if [ ! -d ${HOME}/google-cloud-sdk ]; then
+      curl https://sdk.cloud.google.com | bash;
+    fi
+  - gcloud auth activate-service-account --key-file service-account.json
+install:
+  - gcloud config set project sandbox-jonaskay
+  - bundle install --jobs=3 --retry=3 --deployment
+  - nvm install
+  - bin/yarn
+before_script:
+  - bin/rails db:prepare
+script:
+  - bin/rails test
+before_deploy:
+  - openssl aes-256-cbc -K $encrypted_8ad82cc635a3_key -iv $encrypted_8ad82cc635a3_iv -in config/master.key.enc -out config/master.key -d
+  - RAILS_ENV=production bin/rails assets:precompile
+  - bundle exec rake appengine:exec -- bin/rails db:migrate
+deploy:
+  provider: script
+  script: ./bin/deploy
+  skip_cleanup: true
+  on:
+    branch: master
+```
+
+## Useful links
+
+* A working demo app can be found at [https://github.com/jonaskay/rails-app-engine-standard](https://github.com/jonaskay/rails-app-engine-standard)
+* [Google's guide for running Ruby in the App Engine standard environment](https://cloud.google.com/appengine/docs/standard/ruby/quickstart)
+* [Google's guide for running Rails 5 in the App Engine flexible environment](https://cloud.google.com/ruby/rails/appengine)
+* [Google's guide for creating PostgreSQL instances](https://cloud.google.com/sql/docs/postgres/create-instance)
