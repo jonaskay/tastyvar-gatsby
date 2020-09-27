@@ -2,6 +2,7 @@ import React from "react"
 import { graphql } from "gatsby"
 
 import Layout from "../components/layout"
+import SEO from "../components/seo"
 import Header from "../components/header"
 
 const Content = ({ data }) => {
@@ -9,6 +10,10 @@ const Content = ({ data }) => {
 
   return (
     <Layout>
+      <SEO
+        title={content.frontmatter.title}
+        description={content.frontmatter.description}
+      />
       <Header />
       <article>
         <header className="circuit-board border-b border-indigo-300">
@@ -39,6 +44,7 @@ export const query = graphql`
       html
       frontmatter {
         title
+        description
         date(formatString: "MMMM Do YYYY")
       }
     }
