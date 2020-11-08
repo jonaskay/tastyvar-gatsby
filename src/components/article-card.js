@@ -12,8 +12,15 @@ const ArticleCard = ({ to, title, date, published }) => (
         {title}
         {!published && (
           <>
-            <br />
-            <span className="font-normal">🚧 work-in-progress 🚧</span>
+            <div className="font-normal text-lg">
+              <span role="img" aria-label="work-in-progress">
+                🚧
+              </span>
+              &nbsp;work-in-progress&nbsp;
+              <span role="img" aria-label="work-in-progress">
+                🚧
+              </span>
+            </div>
           </>
         )}
       </h3>
