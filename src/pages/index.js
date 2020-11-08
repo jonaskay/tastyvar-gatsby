@@ -30,6 +30,7 @@ const IndexPage = ({ data }) => {
 
               return (
                 <ArticleCard
+                  key={node.id}
                   to={node.fields.slug}
                   title={node.frontmatter.title}
                   date={node.frontmatter.date}
@@ -57,6 +58,7 @@ export const query = graphql`
     ) {
       edges {
         node {
+          id
           fields {
             slug
           }
