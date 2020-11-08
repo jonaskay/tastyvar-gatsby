@@ -33,6 +33,7 @@ const IndexPage = ({ data }) => {
                   to={node.fields.slug}
                   title={node.frontmatter.title}
                   date={node.frontmatter.date}
+                  published={node.frontmatter.published}
                 />
               )
             })}
@@ -62,6 +63,7 @@ export const query = graphql`
           frontmatter {
             title
             date(formatString: "MMM Do YYYY")
+            published
           }
         }
       }

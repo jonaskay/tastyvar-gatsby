@@ -2,6 +2,7 @@
 title: "Deploying a Ruby on Rails 6 application on Google App Engine Standard with Travis CI"
 description: "Step-by-step guide for deploying a Ruby on Rails 6 application with a PostgreSQL database on Google App Engine standard environment using Travis CI"
 date: 2020-09-27
+published: true
 ---
 
 This guide will walk you through how to deploy a Ruby on Rails 6 application with a PostgreSQL database on Google App Engine standard environment using a Travis CI pipeline.
