@@ -10,7 +10,7 @@ This guide is work-in-progress. I will be adding new chapters very soon.
 - [Content modeling](#content-modeling)
 - [The five types of content types](#the-five-types-of-content-types)
 - [Migration scripts](#migration-scripts)
-- [Block models](#block-models)
+- [Block content types](#block-content-types)
   - [Adding block-specific content types](#adding-block-specific-content-types)
   - [Adding the generic block content type](#adding-the-generic-block-content-type)
 - [Next chapters](#next-chapters)
@@ -50,7 +50,7 @@ You can apply the same changes using the web application but the migration files
 
 To read more about how to do migration scripting, see this [tutorial](https://www.contentful.com/developers/docs/tutorials/cli/scripting-migrations/).
 
-## Block models
+## Block content types
 
 If you create a separate block content type for each one of your page elements, you might run into your tier's content type limits. In addition to this, having tons of different block content types can make it difficult for content editors to remember what each content type does and teach others in their team how to manage the content.
 
