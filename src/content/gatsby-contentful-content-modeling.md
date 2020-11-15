@@ -1,7 +1,7 @@
 ---
 title: "Scalable content modeling for Contentful and Gatsby"
 description: "Build a block-based content model for a website built with Gatsby and Contentful"
-date: 2020-11-08
+date: 2020-11-15
 published: false
 ---
 
@@ -13,6 +13,10 @@ This guide is work-in-progress. I will be adding new chapters very soon.
 - [Block content types](#block-content-types)
   - [Adding block-specific content types](#adding-block-specific-content-types)
   - [Adding the generic block content type](#adding-the-generic-block-content-type)
+- [Layout content types](#layout-content-types)
+- [Page content types](#page-content-types)
+  - [Adding a default page content type](#adding-a-default-page-content-type)
+  - [Adding an article page content type](#adding-an-article-page-content-type)
 - [Next chapters](#next-chapters)
 
 ## Content modeling
@@ -165,6 +169,206 @@ module.exports = function (migration) {
 Component properties allow content editors to change things like copy or color theme. Editing JSON is not going to be as easy as editing content fields but the assumption is that editors rarely need to do this type of block manipulation.
 
 Deciding which blocks get their own content type and which don't is always a balancing act between different usability concerns. Remember that having too many content types will also make your content model more confusing to use.
+
+## Layout content types
+
+We only need one content type to handle layouts in our project. We create a migration file that creates the content type and adds the `name` field to it:
+
+```
+module.exports = function (migration) {
+  const layout = migration
+    .createContentType("layout")
+    .name("Layout")
+    .displayField("name")
+
+  const name = layout.createField("name")
+  name
+    .name("Name")
+    .type("Symbol")
+    .required(true)
+}
+```
+
+Layouts contain blocks that are repeated from page to page. These blocks are placed before or after the actual content of a given page. We add separate fields for these before and after sections:
+
+```
+module.exports = function (migration, context) {
+  // ...
+
+  const before = layout.createField("before")
+  before
+    .name("Blocks added before page content")
+    .type("Array")
+    .items({
+      type: "Link",
+      linkType: "Entry",
+      validations: [{ linkContentType: ["heroBlock", "block"] }],
+    })
+
+  const after = layout.createField("after")
+  after
+    .name("Blocks added after page content")
+    .type("Array")
+    .items({
+      type: "Link",
+      linkType: "Entry",
+      validations: [{ linkContentType: ["heroBlock", "block"] }],
+    })
+}
+```
+
+Notice that we have to list the IDs of our block content types when defining the validation logic for both the `before` and `after` fields. By validating the content type of each linked item we can make sure that content editors are not able to add any other content besides blocks to these fields.
+
+## Page content types
+
+Each page content type could be thought of as a separate page template. In this guide, we will create one page content type for articles and one default page content type that can be used for things like the homepage and the about page.
+
+### Adding a default page content type
+
+Let's start with the default page content type. We create a migration that creates the content type and adds the `name` field to it:
+
+```
+module.exports = function (migration) {
+  const page = migration
+    .createContentType("page")
+    .name("Page")
+    .displayField("name")
+
+  const name = page.createField("name")
+  name
+    .name("Name")
+    .type("Symbol")
+    .required(true)
+}
+```
+
+Next, we create a field for the page slug (slug is a part of the URL path that is used to identify different pages from each other). We also change the appearance of this field to a slug field control:
+
+```
+module.exports = function (migration) {
+  // ...
+
+  const slug = page.createField("slug")
+  slug
+    .name("Slug")
+    .type("Symbol")
+    .required(true)
+    .validations([{ unique: true }])
+  page.changeFieldControl("slug", "builtin", "slugEditor")
+}
+```
+
+We add a `layout` field to link each page to a specific layout:
+
+```
+module.exports = function (migration) {
+  // ...
+
+  const layout = page.createField("layout")
+  layout
+    .name("Layout")
+    .type("Link")
+    .linkType("Entry")
+    .required(true)
+    .validations([{ linkContentType: ["layout"] }])
+}
+```
+
+Finally, we add a field for the actual content of the page which in our case consists of different blocks. As is the case with the layout content type, we have to make sure that content editors can only add blocks (and not other content) to the field by listing all the IDs of the available block content types inside our item validations:
+
+```
+module.exports = function (migration) {
+  // ...
+
+  const blocks = layout.createField("blocks")
+  blocks
+    .name("Blocks")
+    .type("Array")
+    .items({
+      type: "Link",
+      linkType: "Entry",
+      validations: [{ linkContentType: ["heroBlock", "block"] }],
+    })
+}
+```
+
+### Adding an article page content type
+
+We can add another page content type for article pages to demonstrate how we might structure other, more specific page content types.
+
+We first create the content type itself and add the same `name`, `slug`, and `layout` fields that we added to the default page content type:
+
+```
+module.exports = function (migration) {
+  const page = migration
+    .createContentType("page")
+    .name("Page")
+    .displayField("name")
+
+  const name = page.createField("name")
+  name
+    .name("Name")
+    .type("Symbol")
+    .required(true)
+
+  const slug = page.createField("slug")
+  slug
+    .name("Slug")
+    .type("Symbol")
+    .required(true)
+    .validations([{ unique: true }])
+  page.changeFieldControl("slug", "builtin", "slugEditor")
+
+  const layout = page.createField("layout")
+  layout
+    .name("Layout")
+    .type("Link")
+    .linkType("Entry")
+    .required(true)
+    .validations([{ linkContentType: ["layout"] }])
+}
+```
+
+Instead of the `blocks` field, we want to add a rich text field  for the article content. This field will make it easier for content editors to create article pages that consist mainly of written text with different heading levels and paragraphs.
+
+We can call this field `body`:
+
+```
+module.exports = function (migration) {
+  // ...
+
+  const body = page.createField("body")
+  body.name("Body").type("RichText")
+}
+```
+
+We still want to give editors the option to add blocks to specific article pages if they want to. To achieve this, we add `before` and `after` fields to the article page content type. Both of these fields are used to link specific blocks to the page. The `before` field is reserved for blocks that should be displayed before the body text and the `after` field for blocks that should be displayed after the body text:
+
+```
+module.exports = function (migration) {
+  // ...
+
+  const before = page.createField("before")
+  before
+    .name("Blocks added before body text")
+    .type("Array")
+    .items({
+      type: "Link",
+      linkType: "Entry",
+      validations: [{ linkContentType: ["heroBlock", "block"] }],
+    })
+
+  const after = page.createField("after")
+  after
+    .name("Blocks added after body text")
+    .type("Array")
+    .items({
+      type: "Link",
+      linkType: "Entry",
+      validations: [{ linkContentType: ["heroBlock", "block"] }],
+    })
+}
+```
 
 ## Next chapters
 
