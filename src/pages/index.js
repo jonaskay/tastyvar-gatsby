@@ -26,14 +26,15 @@ const IndexPage = ({ data }) => {
         <div className="sm:flex sm:-mx-2">
           {content.map(entry => {
             const { node } = entry
+            const { childMdx } = node
 
             return (
               <ArticleCard
                 key={node.id}
-                to={node.fields.slug}
-                title={node.frontmatter.title}
-                date={node.frontmatter.date}
-                published={node.frontmatter.published}
+                to={childMdx.fields.slug}
+                title={childMdx.frontmatter.title}
+                date={childMdx.frontmatter.date}
+                published={childMdx.frontmatter.published}
               />
             )
           })}
@@ -51,19 +52,22 @@ export const query = graphql`
         description
       }
     }
-    content: allMarkdownRemark(
-      sort: { fields: [frontmatter___date], order: DESC }
+    content: allFile(
+      filter: { sourceInstanceName: { eq: "content" } }
+      sort: { fields: [name], order: DESC }
     ) {
       edges {
         node {
           id
-          fields {
-            slug
-          }
-          frontmatter {
-            title
-            date(formatString: "MMM Do YYYY")
-            published
+          childMdx {
+            fields {
+              slug
+            }
+            frontmatter {
+              date(formatString: "MMM Do YYYY")
+              published
+              title
+            }
           }
         }
       }
