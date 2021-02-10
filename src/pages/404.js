@@ -14,7 +14,7 @@ const NotFound = () => (
       <p className="mb-16 text-xl sm:text-2xl">That page does not exist :(</p>
       <p className="text-lg sm:text-xl">
         Find available content{" "}
-        <Link to="/" className="text-blue-600 hover:underline">
+        <Link to="/" className="text-blue-700 hover:underline">
           here
         </Link>
         .

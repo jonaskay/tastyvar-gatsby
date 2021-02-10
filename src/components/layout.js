@@ -5,7 +5,7 @@ import "./layout.css"
 
 const Layout = ({ children }) => (
   <div className="flex flex-col justify-between min-h-screen sm:text-lg break-words">
-    <div>{children}</div>
+    <main>{children}</main>
     <footer className="p-8 text-center text-base">
       © {new Date().getFullYear()}
     </footer>

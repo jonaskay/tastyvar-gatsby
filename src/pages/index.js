@@ -11,36 +11,34 @@ const IndexPage = ({ data }) => {
   return (
     <Layout>
       <SEO title="Home" />
-      <main>
-        <header className="bg-gray-900 text-white">
-          <div className="container mx-auto px-6 sm:px-8 lg:px-16 py-8">
-            <h1 className="mb-2 text-4xl sm:text-5xl font-bold">
-              <Link to="/">{data.site.siteMetadata.title}</Link>
-            </h1>
-            <div className="text-lg sm:text-xl">
-              {data.site.siteMetadata.description}
-            </div>
-          </div>
-        </header>
+      <header className="bg-gray-900 text-white">
         <div className="container mx-auto px-6 sm:px-8 lg:px-16 py-8">
-          <h2 className="mb-6 text-3xl font-bold">Guides</h2>
-          <div className="sm:flex sm:-mx-2">
-            {content.map(entry => {
-              const { node } = entry
-
-              return (
-                <ArticleCard
-                  key={node.id}
-                  to={node.fields.slug}
-                  title={node.frontmatter.title}
-                  date={node.frontmatter.date}
-                  published={node.frontmatter.published}
-                />
-              )
-            })}
+          <h1 className="mb-2 text-4xl sm:text-5xl font-bold">
+            <Link to="/">{data.site.siteMetadata.title}</Link>
+          </h1>
+          <div className="text-lg sm:text-xl">
+            {data.site.siteMetadata.description}
           </div>
         </div>
-      </main>
+      </header>
+      <div className="container mx-auto px-6 sm:px-8 lg:px-16 py-8">
+        <h2 className="mb-6 text-3xl font-bold">Guides</h2>
+        <div className="sm:flex sm:-mx-2">
+          {content.map(entry => {
+            const { node } = entry
+
+            return (
+              <ArticleCard
+                key={node.id}
+                to={node.fields.slug}
+                title={node.frontmatter.title}
+                date={node.frontmatter.date}
+                published={node.frontmatter.published}
+              />
+            )
+          })}
+        </div>
+      </div>
     </Layout>
   )
 }
