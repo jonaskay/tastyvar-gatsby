@@ -1,10 +1,13 @@
 const { MDX_SOURCE } = require("./src/common/sources")
+const feedBuilder = require("./src/common/feed-builder")
+const routes = require("./src/common/routes")
 
 module.exports = {
   siteMetadata: {
     title: `tasty_var`,
     description: `Developer blog by Joonas Kykkänen`,
-    author: `@gatsbyjs`,
+    url: `https://www.tastyvar.com`,
+    author: `@joonaskykkanen`,
   },
   plugins: [
     `gatsby-plugin-react-helmet`,
@@ -15,6 +18,62 @@ module.exports = {
           require(`postcss-import`)(),
           require(`tailwindcss`)(),
           require(`autoprefixer`)(),
+        ],
+      },
+    },
+    {
+      resolve: `gatsby-plugin-feed`,
+      options: {
+        query: `
+          {
+            site {
+              siteMetadata {
+                author
+                description
+                title
+                url
+              }
+            }
+          }
+        `,
+        setup: ({ query: { site } }) =>
+          feedBuilder.feedOptions(site.siteMetadata),
+        feeds: [
+          {
+            query: `
+              {
+                allFile(
+                  filter: { sourceInstanceName: { eq: "${MDX_SOURCE}" } }
+                  sort: { fields: [name], order: DESC }
+                  limit: 10
+                ) {
+                  edges {
+                    node {
+                      childMdx {
+                        fields {
+                          slug
+                        }
+                        frontmatter {
+                          date
+                          description
+                          title
+                        }
+                        html
+                      }
+                    }
+                  }
+                }
+              }
+            `,
+            serialize: ({ query: { site, allFile } }) => {
+              const { url } = site.siteMetadata
+
+              return allFile.edges.map(({ node }) =>
+                feedBuilder.itemOptions(url, node)
+              )
+            },
+            output: routes.RSS,
+          },
         ],
       },
     },
