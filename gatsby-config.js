@@ -9,6 +9,16 @@ module.exports = {
   plugins: [
     `gatsby-plugin-react-helmet`,
     {
+      resolve: `gatsby-plugin-postcss`,
+      options: {
+        postCssPlugins: [
+          require(`postcss-import`)(),
+          require(`tailwindcss`)(),
+          require(`autoprefixer`)(),
+        ],
+      },
+    },
+    {
       resolve: `gatsby-source-filesystem`,
       options: {
         name: MDX_SOURCE,
@@ -49,7 +59,6 @@ module.exports = {
         icon: `src/images/tastyvar-icon.png`, // This path is relative to the root of the site.
       },
     },
-    `gatsby-plugin-postcss`,
     {
       resolve: `gatsby-plugin-google-analytics`,
       options: {
