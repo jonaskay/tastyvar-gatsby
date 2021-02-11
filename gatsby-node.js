@@ -1,52 +1,20 @@
 const path = require("path")
-const { createFilePath } = require("gatsby-source-filesystem")
+
+const { isSourceableMdxFile, MDX_SOURCE } = require("./src/common/sources")
+const createMdxFields = require("./src/common/create-mdx-fields")
+const createMdxPages = require("./src/common/create-mdx-pages")
 
 exports.onCreateNode = ({ node, actions, getNode }) => {
-  const { createNodeField } = actions
-
-  if (node.internal.type === `MarkdownRemark`) {
-    const value = createFilePath({ node, getNode })
-    createNodeField({
-      name: `slug`,
-      node,
-      value,
-    })
+  if (isSourceableMdxFile(node, getNode)) {
+    createMdxFields(node, actions, getNode)
   }
 }
 
-exports.createPages = async ({ graphql, actions }) => {
-  const { createPage } = actions
-
-  const template = path.resolve(`./src/templates/content.js`)
-  const result = await graphql(
-    `
-      {
-        allMarkdownRemark(sort: { fields: [frontmatter___date], order: DESC }) {
-          edges {
-            node {
-              fields {
-                slug
-              }
-            }
-          }
-        }
-      }
-    `
+exports.createPages = async ({ actions, graphql, reporter }) => {
+  await createMdxPages(
+    path.resolve(path.join(__dirname, "src", "templates", `${MDX_SOURCE}.tsx`)),
+    actions,
+    graphql,
+    reporter
   )
-
-  if (result.errors) {
-    throw result.errors
-  }
-
-  const content = result.data.allMarkdownRemark.edges
-
-  content.forEach(entry => {
-    createPage({
-      path: entry.node.fields.slug,
-      component: template,
-      context: {
-        slug: entry.node.fields.slug,
-      },
-    })
-  })
 }

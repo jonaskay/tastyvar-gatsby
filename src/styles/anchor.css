@@ -1,0 +1,21 @@
+a.anchor {
+  float: left;
+  height: 100%;
+  margin-left: -24px;
+  padding-right: 4px;
+}
+
+a.anchor > svg {
+  display: inline-block;
+  vertical-align: baseline;
+  visibility: hidden;
+}
+
+h1:hover > a.anchor > svg,
+h2:hover > a.anchor > svg,
+h3:hover > a.anchor > svg,
+h4:hover > a.anchor > svg,
+h5:hover > a.anchor > svg,
+h6:hover > a.anchor > svg {
+  visibility: visible;
+}
