@@ -146,7 +146,6 @@ code {
 .markdown code {
   @apply .bg-gray-100 .border .rounded;
 
-  overflow-x: auto;
   padding: 1px 3px;
 }
 
@@ -154,6 +153,7 @@ code {
   @apply .p-4;
 
   display: block;
+  overflow-x: auto;
 }
 
 .circuit-board {
