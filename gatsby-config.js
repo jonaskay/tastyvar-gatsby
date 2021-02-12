@@ -112,10 +112,10 @@ module.exports = {
         name: `tasty_var`,
         short_name: `tasty_var`,
         start_url: `/`,
-        background_color: `#1A202C`,
-        theme_color: `#1A202C`,
+        background_color: `#0F172A`,
+        theme_color: `#0F172A`,
         display: `minimal-ui`,
-        icon: `src/images/tastyvar-icon.png`, // This path is relative to the root of the site.
+        icon: `src/images/tastyvar-icon.png`,
       },
     },
     {
