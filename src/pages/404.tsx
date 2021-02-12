@@ -9,7 +9,7 @@ const NotFound: React.FC = () => (
   <Layout>
     <SEO title="404" />
     <Header />
-    <main className="container mx-auto px-4 sm:px-8 lg:px-16 py-8 text-center">
+    <main className="container max-w-screen-xl mx-auto px-4 sm:px-8 lg:px-16 py-8 text-center">
       <h1 className="mb-2 text-4xl sm:text-5xl font-bold">404</h1>
       <p className="mb-16 text-xl sm:text-2xl">That page does not exist :(</p>
       <p className="text-lg sm:text-xl">
