@@ -1,4 +1,5 @@
 const { MDX_SOURCE } = require("./src/common/sources")
+const RepositoryParser = require("./src/common/repository-parser")
 const feedBuilder = require("./src/common/feed-builder")
 const routes = require("./src/common/routes")
 
@@ -9,6 +10,9 @@ module.exports = {
     image: `/images/circuit-board.jpg`,
     url: `https://www.tastyvar.com`,
     author: `@joonaskykkanen`,
+    repository: new RepositoryParser(
+      process.env.npm_package_repository_url
+    ).url(),
   },
   plugins: [
     `gatsby-plugin-react-helmet`,
