@@ -34,10 +34,12 @@ const ContentTemplate: React.FC<PageProps<DataProps>> = ({ data }) => {
       <SEO title={title} description={description} path={slug} type="article" />
       <Header />
       <article>
-        <header className="circuit-board border-b border-indigo-300">
-          <div className="md:max-w-2xl mx-auto bg-indigo-100 md:border-r md:border-l border-indigo-300">
+        <header className="circuit-board border-b border-blue-300">
+          <div className="md:max-w-2xl mx-auto bg-blue-100 md:border-r md:border-l border-blue-300">
             <div className="max-w-2xl mx-auto pl-8 pr-6 py-4 sm:pl-10 sm:pr-8 sm:py-8">
-              <h1 className="mb-4 text-2xl sm:text-5xl font-bold">{title}</h1>
+              <h1 className="mb-4 text-2xl sm:text-5xl font-bold leading-normal sm:leading-normal">
+                {title}
+              </h1>
               <div className="text-right">Updated {date}</div>
             </div>
           </div>
