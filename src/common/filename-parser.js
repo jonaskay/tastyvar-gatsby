@@ -5,12 +5,12 @@ module.exports = class FilenameParser {
     const schema = Joi.object({
       filename: Joi.string().pattern(/^(?:\/\S+\/|\/)\d+-\d+-\d+-\S+\/$/),
     })
-    this.filename = filename
-
     const { error } = schema.validate({ filename })
     if (error) {
       throw error
     }
+
+    this.filename = filename
   }
 
   year() {
