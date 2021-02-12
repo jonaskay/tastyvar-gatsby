@@ -5,7 +5,7 @@ import Layout from "../components/layout"
 import SEO from "../components/seo"
 import Header from "../components/header"
 
-const NotFound = () => (
+const NotFound: React.FC = () => (
   <Layout>
     <SEO title="404" />
     <Header />

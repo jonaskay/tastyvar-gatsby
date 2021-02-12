@@ -1,8 +1,19 @@
 import React from "react"
-import PropTypes from "prop-types"
 import { Link } from "gatsby"
 
-const ArticleCard = ({ to, title, date, published }) => (
+type ArticleCardProps = {
+  date: string
+  published: boolean
+  title: string
+  to: string
+}
+
+const ArticleCard: React.FC<ArticleCardProps> = ({
+  date,
+  published,
+  title,
+  to,
+}) => (
   <Link
     to={to}
     className="card article-card flex flex-col justify-between hover:border-orange-300 hover:bg-orange-100 hover:shadow-md transition ease-in-out duration-200"
@@ -33,11 +44,5 @@ const ArticleCard = ({ to, title, date, published }) => (
     </div>
   </Link>
 )
-
-ArticleCard.propTypes = {
-  to: PropTypes.string.isRequired,
-  title: PropTypes.string.isRequired,
-  date: PropTypes.string.isRequired,
-}
 
 export default ArticleCard

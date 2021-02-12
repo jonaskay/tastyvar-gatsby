@@ -1,8 +1,12 @@
 import React from "react"
-import PropTypes from "prop-types"
+
 import RSSLink from "./rss-link"
 
-const Layout = ({ children }) => (
+type LayoutProps = {
+  children: React.ReactNode
+}
+
+const Layout: React.FC<LayoutProps> = ({ children }) => (
   <div className="flex flex-col justify-between min-h-screen sm:text-lg break-words">
     <main>{children}</main>
     <footer className="p-8 text-center text-base">
@@ -13,9 +17,5 @@ const Layout = ({ children }) => (
     </footer>
   </div>
 )
-
-Layout.propTypes = {
-  children: PropTypes.node.isRequired,
-}
 
 export default Layout
