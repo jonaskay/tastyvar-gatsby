@@ -7,6 +7,10 @@ published: true
 
 This guide will walk you through how to deploy a Ruby on Rails 6 application with a PostgreSQL database on Google App Engine standard environment using a Travis CI pipeline.
 
+<!-- omit in toc -->
+
+## Table of contents
+
 - [App Engine standard vs. flexible environment](#app-engine-standard-vs-flexible-environment)
 - [Prerequisites](#prerequisites)
 - [Setting up Travis CI](#setting-up-travis-ci)
@@ -102,7 +106,7 @@ During the `install` phase we install all our dependencies: First, we install ou
 
 In our `before_script` step we prepare our database for the tests. The command `bin/rails db:prepare` was introduced in Rails 6 and it either runs migrations or creates the database, loads the schema, and seeds the database if no database exists.
 
-*Sidenote:* Travis CI doesn't store our database between builds and therefore `bin/rails db:prepare` will always create a new database and seed it. This means that we could easily replace `bin/rails db:prepare` with `bin/rails db:setup`. But I thought that this is a great opportunity to get more familiar with this new Rails 6 database task.
+_Sidenote:_ Travis CI doesn't store our database between builds and therefore `bin/rails db:prepare` will always create a new database and seed it. This means that we could easily replace `bin/rails db:prepare` with `bin/rails db:setup`. But I thought that this is a great opportunity to get more familiar with this new Rails 6 database task.
 
 Finally, we run our tests to make sure everything is working during the `script` phase with the command `bin/rails test`.
 
@@ -118,7 +122,7 @@ To add the `.ruby-version` file, run
 $ echo "ruby-2.5.8" > .ruby-version
 ```
 
-*Sidenote:* Remember that as of September 2020 App Engine standard environment supports only Ruby 2.5.
+_Sidenote:_ Remember that as of September 2020 App Engine standard environment supports only Ruby 2.5.
 
 In addition to specifying a Ruby version with a `.ruby-version` file, we need to make sure our `Gemfile` doesn't restrict the Ruby version to a specific version. This is because App Engine might update the patch version.
 
@@ -149,7 +153,7 @@ After the commit, push your changes to GitHub by running
 $ git push origin master
 ```
 
-If you go to [https://travis-ci.com/](https://travis-ci.com/), you should see your new build appear. If your build errors, double check your typing and look for clues inside the build logs to figure out what's causing the build to error. If your build doesn't appear on Travis CI even after waiting for couple of minutes, make sure you have correctly named the config file `.travis.yml`: the filename begins with a dot and its extension is `.yml`  – not `.yaml`.
+If you go to [https://travis-ci.com/](https://travis-ci.com/), you should see your new build appear. If your build errors, double check your typing and look for clues inside the build logs to figure out what's causing the build to error. If your build doesn't appear on Travis CI even after waiting for couple of minutes, make sure you have correctly named the config file `.travis.yml`: the filename begins with a dot and its extension is `.yml` – not `.yaml`.
 
 ## Setting up App Engine
 
@@ -259,7 +263,7 @@ As mentioned before, we need the gcloud command-line tool to deploy our applicat
 
 Since we want to deploy the application using our CI/CD pipeline, we need to install the Google Cloud SDK for our Travis CI virtual machine. We will also cache this install to make our builds faster.
 
- First, add a new cached directory for Google Cloud SDK inside `.travis.yml`:
+First, add a new cached directory for Google Cloud SDK inside `.travis.yml`:
 
 ```
 cache:
@@ -321,7 +325,7 @@ Encrypt the credentials file by running:
 $ travis encrypt-file service-account.json --com
 ```
 
-*Sidenote:* the `--com` option tells the client to use travis-ci.com and not travis-ci.org. All new users and projects should only use travis-ci.com.
+_Sidenote:_ the `--com` option tells the client to use travis-ci.com and not travis-ci.org. All new users and projects should only use travis-ci.com.
 
 The output of the `encrypt-file` command will contain instructions on how to also decrypt `service-account.json`. Copy the decrypt command from the instructions and add it as the first command in the `before_install` step inside `.travis.yml`:
 
@@ -354,8 +358,8 @@ Start by navigating to `APIs & Services > Library` in the cloud console.
 
 The APIs that we need to enable are:
 
-* App Engine Admin API
-* Cloud Build API
+- App Engine Admin API
+- Cloud Build API
 
 Search for each of these APIs on the library page and enable them for your project.
 
@@ -567,7 +571,7 @@ before_deploy:
 
 You can now try to add a new migration file and deploy your application.
 
-*Sidenote:* At the time of writing, my migrations fail every now and then when I use this setup. However, whenever I restart a failed build on Travis, the migrations run successfully. I haven't unfortunately been able to figure out what's causing these occasional fails.
+_Sidenote:_ At the time of writing, my migrations fail every now and then when I use this setup. However, whenever I restart a failed build on Travis, the migrations run successfully. I haven't unfortunately been able to figure out what's causing these occasional fails.
 
 ## Finishing up
 
@@ -623,7 +627,7 @@ deploy:
 
 ## Useful links
 
-* A working demo app can be found at [https://github.com/jonaskay/rails-app-engine-standard](https://github.com/jonaskay/rails-app-engine-standard)
-* [Google's guide for running Ruby in the App Engine standard environment](https://cloud.google.com/appengine/docs/standard/ruby/quickstart)
-* [Google's guide for running Rails 5 in the App Engine flexible environment](https://cloud.google.com/ruby/rails/appengine)
-* [Google's guide for creating PostgreSQL instances](https://cloud.google.com/sql/docs/postgres/create-instance)
+- A working demo app can be found at [https://github.com/jonaskay/rails-app-engine-standard](https://github.com/jonaskay/rails-app-engine-standard)
+- [Google's guide for running Ruby in the App Engine standard environment](https://cloud.google.com/appengine/docs/standard/ruby/quickstart)
+- [Google's guide for running Rails 5 in the App Engine flexible environment](https://cloud.google.com/ruby/rails/appengine)
+- [Google's guide for creating PostgreSQL instances](https://cloud.google.com/sql/docs/postgres/create-instance)
