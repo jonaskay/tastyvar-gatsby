@@ -9,6 +9,9 @@ import MDX from "../components/mdx"
 type DataProps = {
   mdx: {
     body: string
+    fields: {
+      slug: string
+    }
     frontmatter: {
       date: string
       description: string
@@ -20,6 +23,7 @@ type DataProps = {
 const ContentTemplate: React.FC<PageProps<DataProps>> = ({ data }) => {
   const {
     mdx: {
+      fields: { slug },
       frontmatter: { title, description, date },
       body,
     },
@@ -27,7 +31,7 @@ const ContentTemplate: React.FC<PageProps<DataProps>> = ({ data }) => {
 
   return (
     <Layout>
-      <SEO title={title} description={description} />
+      <SEO title={title} description={description} path={slug} type="article" />
       <Header />
       <article>
         <header className="circuit-board border-b border-indigo-300">
@@ -50,6 +54,9 @@ export const query = graphql`
   query($slug: String!) {
     mdx(fields: { slug: { eq: $slug } }) {
       body
+      fields {
+        slug
+      }
       frontmatter {
         date(formatString: "MMMM Do YYYY")
         description

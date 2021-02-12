@@ -6,6 +6,7 @@ module.exports = {
   siteMetadata: {
     title: `tasty_var`,
     description: `Developer blog by Joonas Kykkänen`,
+    image: `/images/circuit-board.jpg`,
     url: `https://www.tastyvar.com`,
     author: `@joonaskykkanen`,
   },
