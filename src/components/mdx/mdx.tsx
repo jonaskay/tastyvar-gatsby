@@ -2,14 +2,16 @@ import React from "react"
 import { MDXProvider } from "@mdx-js/react"
 import { MDXRenderer } from "gatsby-plugin-mdx"
 
-import Code from "./code"
 import List from "./list"
+import Code from "./code"
+import InlineCode from "./inline-code"
 import { TableOfContentsData } from "../table-of-contents"
 
 const components = {
   ul: List,
   li: List.Item,
   code: Code,
+  inlineCode: InlineCode,
 }
 
 type MDXProps = {
