@@ -123,6 +123,7 @@ module.exports = {
         icon: `src/images/tastyvar-icon.png`,
       },
     },
+    `gatsby-plugin-netlify`,
     {
       resolve: `gatsby-plugin-google-analytics`,
       options: {
