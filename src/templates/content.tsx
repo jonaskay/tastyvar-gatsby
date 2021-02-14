@@ -1,10 +1,11 @@
 import React from "react"
 import { graphql, PageProps } from "gatsby"
 
+import { TableOfContentsData } from "../components/table-of-contents"
 import Layout from "../components/layout"
 import SEO from "../components/seo"
 import Header from "../components/header"
-import MDX from "../components/mdx"
+import MDX from "../components/mdx/mdx"
 
 type DataProps = {
   mdx: {
@@ -17,6 +18,7 @@ type DataProps = {
       description: string
       title: string
     }
+    tableOfContents: TableOfContentsData
   }
 }
 
@@ -25,6 +27,7 @@ const ContentTemplate: React.FC<PageProps<DataProps>> = ({ data }) => {
     mdx: {
       fields: { slug },
       frontmatter: { title, description, date },
+      tableOfContents,
       body,
     },
   } = data
@@ -45,7 +48,7 @@ const ContentTemplate: React.FC<PageProps<DataProps>> = ({ data }) => {
           </div>
         </header>
         <div className="markdown pl-8 pr-6 py-4 sm:pl-10 sm:pr-8 sm:py-8 max-w-2xl mx-auto leading-relaxed">
-          <MDX>{body}</MDX>
+          <MDX tableOfContents={tableOfContents}>{body}</MDX>
         </div>
       </article>
     </Layout>
@@ -64,6 +67,7 @@ export const query = graphql`
         description
         title
       }
+      tableOfContents
     }
   }
 `

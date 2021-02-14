@@ -4,12 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  code {
-    font-family: "Fira Code", monospace;
-  }
-}
-
 @layer components {
   .brand:hover > span::before {
     animation: typing 0.2s linear;
@@ -128,27 +122,6 @@
 
   .markdown a:hover {
     @apply underline;
-  }
-
-  .markdown ul {
-    @apply list-disc pl-8;
-  }
-
-  .markdown ul > li {
-    @apply my-2;
-  }
-
-  .markdown code {
-    @apply bg-gray-100 border rounded;
-
-    padding: 1px 3px;
-  }
-
-  .markdown pre > code {
-    @apply p-4;
-
-    display: block;
-    overflow-x: auto;
   }
 
   .circuit-board {
