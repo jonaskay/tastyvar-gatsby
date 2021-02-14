@@ -4,12 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  code {
-    font-family: "Fira Code", monospace;
-  }
-}
-
 @layer components {
   .brand:hover > span::before {
     animation: typing 0.2s linear;
