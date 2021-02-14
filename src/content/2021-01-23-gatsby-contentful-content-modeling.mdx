@@ -5,6 +5,8 @@ date: 2021-01-23
 published: true
 ---
 
+import TableOfContents from "../components/table-of-contents"
+
 This guide will tell you how to create a scalable and flexible content model with [Contentful](https://www.contentful.com/) and [Gatsby](https://www.gatsbyjs.com/).
 
 Contentful provides a flexible and loved headless content backend for many Gatsby applications. Getting started with Gatsby and Contentful is easy with the official [`gatsby-source-contentful`](https://www.gatsbyjs.com/plugins/gatsby-source-contentful/) plugin, and editing content types and adding new content is a breeze using Contentful's web app.
@@ -15,22 +17,7 @@ The purpose of this guide is to describe a technique to model your content in a 
 
 Sidenote: I originally learned about blocks from a presentation given by one of Contentful's own developers. Back then I had finished my first Contentful project where we had applied a somewhat block-based architecture but lacked a proper term to describe what we were trying to achieve.
 
-<!-- omit in toc -->
-
-## Table of contents
-
-- [The five categories of content types](#the-five-categories-of-content-types)
-- [Application content types](#application-content-types)
-- [Block content types](#block-content-types)
-  - [Generic and specific blocks](#generic-and-specific-blocks)
-  - [Adding specific block content types](#adding-specific-block-content-types)
-  - [Adding the generic block content type](#adding-the-generic-block-content-type)
-- [Layout content types](#layout-content-types)
-- [Page content types](#page-content-types)
-  - [Adding a default page content type](#adding-a-default-page-content-type)
-  - [Adding an article page content type](#adding-an-article-page-content-type)
-- [Value content types](#value-content-types)
-- [Conclusion](#conclusion)
+<TableOfContents data={props.tableOfContents} />
 
 ## The five categories of content types
 

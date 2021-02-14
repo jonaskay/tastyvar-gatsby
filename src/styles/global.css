@@ -130,14 +130,6 @@
     @apply underline;
   }
 
-  .markdown ul {
-    @apply list-disc pl-8;
-  }
-
-  .markdown ul > li {
-    @apply my-2;
-  }
-
   .markdown code {
     @apply bg-gray-100 border rounded;
 
