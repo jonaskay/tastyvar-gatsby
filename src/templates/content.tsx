@@ -11,10 +11,10 @@ type DataProps = {
   mdx: {
     body: string
     fields: {
+      date: string
       slug: string
     }
     frontmatter: {
-      date: string
       description: string
       title: string
     }
@@ -25,8 +25,8 @@ type DataProps = {
 const ContentTemplate: React.FC<PageProps<DataProps>> = ({ data }) => {
   const {
     mdx: {
-      fields: { slug },
-      frontmatter: { title, description, date },
+      fields: { slug, date },
+      frontmatter: { title, description },
       tableOfContents,
       body,
     },
@@ -60,10 +60,10 @@ export const query = graphql`
     mdx(fields: { slug: { eq: $slug } }) {
       body
       fields {
+        date(formatString: "MMMM Do YYYY")
         slug
       }
       frontmatter {
-        date(formatString: "MMMM Do YYYY")
         description
         title
       }

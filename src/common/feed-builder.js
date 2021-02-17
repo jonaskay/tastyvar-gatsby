@@ -14,11 +14,11 @@ const itemOptionsSchema = Joi.object({
       html: Joi.string().required(),
       fields: Joi.object({
         slug: Joi.string().required(),
+        date: Joi.string().required(),
       }).required(),
       frontmatter: Joi.object({
         title: Joi.string().required(),
         description: Joi.string().required(),
-        date: Joi.string().required(),
       }).required(),
     }).required(),
   }),
@@ -57,7 +57,7 @@ const itemOptions = (url, data) => {
     description: frontmatter.description,
     url: itemUrl,
     guid: itemUrl,
-    date: frontmatter.date,
+    date: fields.date,
     custom_elements: [{ "content:encoded": html }],
   }
 }

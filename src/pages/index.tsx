@@ -12,10 +12,10 @@ type DataProps = {
         id: string
         childMdx: {
           fields: {
+            date: string
             slug: string
           }
           frontmatter: {
-            date: string
             published: boolean
             title: string
           }
@@ -58,7 +58,7 @@ const IndexPage: React.FC<PageProps<DataProps>> = ({ data }) => {
                 key={node.id}
                 to={childMdx.fields.slug}
                 title={childMdx.frontmatter.title}
-                date={childMdx.frontmatter.date}
+                date={childMdx.fields.date}
                 published={childMdx.frontmatter.published}
               />
             )
@@ -80,10 +80,10 @@ export const query = graphql`
           id
           childMdx {
             fields {
+              date(formatString: "MMM Do YYYY")
               slug
             }
             frontmatter {
-              date(formatString: "MMM Do YYYY")
               published
               title
             }
