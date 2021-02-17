@@ -34,13 +34,13 @@ describe("itemOptions", () => {
 
   const data = {
     childMdx: {
-      frontmatter: {
-        title: "foo",
-        description: "bar",
-        date: "baz",
-      },
       fields: {
-        slug: "qux",
+        slug: "foo",
+        date: "bar",
+      },
+      frontmatter: {
+        title: "baz",
+        description: "qux",
       },
       html: "lorem ipsum",
     },
@@ -48,11 +48,11 @@ describe("itemOptions", () => {
 
   it("returns the item options when site url and item data are valid", () => {
     expect(feedBuilder.itemOptions(url, data)).toEqual({
-      url: "1337qux",
-      guid: "1337qux",
-      date: "baz",
-      title: "foo",
-      description: "bar",
+      url: "1337foo",
+      guid: "1337foo",
+      date: "bar",
+      title: "baz",
+      description: "qux",
       custom_elements: [{ "content:encoded": "lorem ipsum" }],
     })
   })
